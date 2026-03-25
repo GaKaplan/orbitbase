@@ -8,9 +8,9 @@ import {MemecoinTemplate} from "../src/MemecoinTemplate.sol";
 import {LiquidityLocker} from "../src/LiquidityLocker.sol";
  
 contract DeployScript is Script {
-    function run() external {
-        // Anvil's first default private key
-        uint256 deployerPrivateKey = 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80;
+  function run() external {
+        // Use PRIVATE_KEY from environment or fallback to Anvil for local
+        uint256 deployerPrivateKey = vm.envOr("PRIVATE_KEY", uint256(0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80));
         address deployer = vm.addr(deployerPrivateKey);
         
         vm.startBroadcast(deployerPrivateKey);
