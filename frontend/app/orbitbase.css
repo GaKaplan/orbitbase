@@ -1,0 +1,90 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap');
+
+:root {
+  --background: #050507;
+  --foreground: #ffffff;
+  --primary: #00f2ff;
+  --primary-glow: rgba(0, 242, 255, 0.4);
+  --secondary: #7000ff;
+  --secondary-glow: rgba(112, 0, 255, 0.3);
+  --accent: #0052ff;
+  --glass: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.1);
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  background-image: 
+    radial-gradient(circle at 0% 0%, var(--secondary-glow) 0%, transparent 40%),
+    radial-gradient(circle at 100% 100%, var(--primary-glow) 0%, transparent 40%),
+    radial-gradient(circle at 50% 50%, rgba(0, 82, 255, 0.1) 0%, transparent 60%);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Outfit', sans-serif;
+  letter-spacing: -0.02em;
+}
+
+.glass-card {
+  background: var(--glass);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border: 1px solid var(--glass-border);
+  border-radius: 2.5rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  transition: all 0.3s ease;
+}
+
+.glass-card:hover {
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+  transform: translateY(-2px);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: #000;
+  font-weight: 700;
+  padding: 1rem 2rem;
+  border-radius: 1.25rem;
+  box-shadow: 0 0 20px var(--primary-glow);
+  transition: all 0.2s ease;
+  border: none;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  box-shadow: 0 0 30px var(--primary-glow);
+  transform: scale(1.02);
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+.text-gradient {
+  background: linear-gradient(to right, var(--primary), #fff, var(--secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
