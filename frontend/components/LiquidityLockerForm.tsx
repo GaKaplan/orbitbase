@@ -3,15 +3,18 @@
 import { useState, useEffect } from 'react';
 import { useWriteContract, useWaitForTransactionReceipt, useAccount } from 'wagmi';
 import { parseEther, erc20Abi, Address } from 'viem';
+import { translations, Language } from '@/lib/translations';
 
 const LOCKER_ADDRESS = process.env.NEXT_PUBLIC_LOCKER_ADDRESS || '0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e';
 
-export function LiquidityLockerForm() {
+export function LiquidityLockerForm({ lang }: { lang: Language }) {
   const [tokenAddress, setTokenAddress] = useState('');
   const [amount, setAmount] = useState('');
   const [unlockDate, setUnlockDate] = useState('');
   const [step, setStep] = useState<'initial' | 'approving' | 'approved' | 'locking' | 'locked'>('initial');
   const [mounted, setMounted] = useState(false);
+
+  const t = translations[lang].forms.locker;
 
   // All hooks must be called here
   const { isConnected } = useAccount();
@@ -39,10 +42,10 @@ export function LiquidityLockerForm() {
     if (!tokenAddress || !amount) return;
     setStep('approving');
     approveWrite({
-      address: tokenAddress as Address,
+      address: tokenAddress as `0x${string}`,
       abi: erc20Abi,
       functionName: 'approve',
-      args: [LOCKER_ADDRESS, parseEther(amount)],
+      args: [LOCKER_ADDRESS as `0x${string}`, parseEther(amount)],
     });
   };
 
@@ -55,7 +58,7 @@ export function LiquidityLockerForm() {
     const amountWei = parseEther(amount);
 
     lockWrite({
-      address: LOCKER_ADDRESS,
+      address: LOCKER_ADDRESS as `0x${string}`,
       abi: [
         {
           "inputs": [
@@ -77,15 +80,15 @@ export function LiquidityLockerForm() {
   return (
     <div className="glass-card p-8 w-full max-w-md">
       <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-        <span className="text-amber-500">🔒</span> Liquidity Locker
+        <span className="text-amber-500">🔒</span> {t.title}
       </h2>
       
       <form onSubmit={handleLock} className="space-y-5">
         <div className="space-y-1">
-          <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">Dirección del Token (LP)</label>
+          <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">{t.tokenLabel}</label>
           <input
             type="text"
-            placeholder="0x..."
+            placeholder={t.tokenPlaceholder}
             className="w-full bg-black/5 dark:bg-white/5 border-none rounded-2xl px-5 py-4 text-sm focus:ring-2 focus:ring-amber-500 outline-none transition-all font-mono"
             value={tokenAddress}
             onChange={(e) => setTokenAddress(e.target.value)}
@@ -95,7 +98,7 @@ export function LiquidityLockerForm() {
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
-            <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">Cantidad</label>
+            <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">{t.amountLabel}</label>
             <input
               type="number"
               placeholder="1000"
@@ -106,7 +109,7 @@ export function LiquidityLockerForm() {
             />
           </div>
           <div className="space-y-1">
-            <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">Fecha de Desbloqueo</label>
+            <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">{t.dateLabel}</label>
             <input
               type="datetime-local"
               className="w-full bg-black/5 dark:bg-white/5 border-none rounded-2xl px-5 py-3 text-[11px] focus:ring-2 focus:ring-amber-500 outline-none transition-all"
@@ -124,7 +127,7 @@ export function LiquidityLockerForm() {
               onClick={handleApprove}
                className="btn-primary w-full"
             >
-              {step === 'approving' ? 'Confirmando aprobación...' : 'Paso 1: Aprobar Tokens'}
+              {step === 'approving' ? t.btnApprovePending : t.btnApproveStep}
             </button>
           ) : (
             <button
@@ -136,7 +139,7 @@ export function LiquidityLockerForm() {
                 : 'bg-amber-500 hover:bg-amber-600 text-white shadow-amber-500/30'
               }`}
             >
-              {step === 'locking' ? 'Bloqueando...' : step === 'locked' ? '✅ Tokens Bloqueados' : 'Paso 2: Bloquear Tokens'}
+              {step === 'locking' ? t.btnLockPending : step === 'locked' ? t.btnLocked : t.btnLockStep}
             </button>
           )}
         </div>
@@ -144,19 +147,19 @@ export function LiquidityLockerForm() {
 
       {step === 'approved' && (
         <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl text-blue-600 dark:text-blue-400 text-xs text-center">
-            ✨ Aprobación exitosa. ¡Ahora puedes bloquear tus tokens!
+            {t.approveSuccess}
         </div>
       )}
 
       {step === 'locked' && (
         <div className="mt-6 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl text-emerald-600 dark:text-emerald-400 text-sm">
-           ✅ Operación completada. Tokens bloqueados hasta el {new Date(unlockDate).toLocaleString()}
+           {t.lockSuccess} {new Date(unlockDate).toLocaleString()}
         </div>
       )}
 
       {(approveError || lockError) && (
         <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-600 text-[11px]">
-          Hubo un error en la transacción. Revisa MetaMask.
+          {t.errorTx}
         </div>
       )}
     </div>

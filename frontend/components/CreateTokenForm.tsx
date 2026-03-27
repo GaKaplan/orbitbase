@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useWriteContract, useWaitForTransactionReceipt, useAccount, useReadContract } from 'wagmi';
 import { parseEther, formatEther } from 'viem';
+import { translations, Language } from '@/lib/translations';
 
 const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS || '0x610178dA211FEF7D417bC0e6FeD39F05609AD788';
 const FACTORY_ABI = [
@@ -20,12 +21,14 @@ const FACTORY_ABI = [
   }
 ] as const;
 
-export function CreateTokenForm() {
+export function CreateTokenForm({ lang }: { lang: Language }) {
   const [name, setName] = useState('');
   const [symbol, setSymbol] = useState('');
   const [supply, setSupply] = useState('1000000');
   const [isMemecoin, setIsMemecoin] = useState(true);
   const [mounted, setMounted] = useState(false);
+
+  const t = translations[lang].forms.createToken;
 
   // All hooks must be called here
   const { isConnected } = useAccount();
@@ -52,7 +55,6 @@ export function CreateTokenForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isConnected) {
-        alert('Por favor, conecta tu wallet');
         return;
     }
 
@@ -77,7 +79,7 @@ export function CreateTokenForm() {
   return (
     <div className="glass-card p-8 w-full max-w-md">
       <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-        <span className="text-[var(--primary)]">🚀</span> Lanzar Nuevo Proyecto
+        <span className="text-[var(--primary)]">🚀</span> {t.title}
       </h2>
       
       <form onSubmit={handleSubmit} className="space-y-5">
@@ -91,7 +93,7 @@ export function CreateTokenForm() {
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            Memecoin (Fijo)
+            {t.memecoin}
           </button>
           <button
             type="button"
@@ -102,15 +104,15 @@ export function CreateTokenForm() {
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            Token Estándar
+            {t.standard}
           </button>
         </div>
 
         <div className="space-y-1">
-          <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">Nombre del Proyecto</label>
+          <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">{t.nameLabel}</label>
           <input
             type="text"
-            placeholder="Ej: Base Moon Rocket"
+            placeholder={t.namePlaceholder}
             className="w-full bg-black/5 dark:bg-white/5 border-none rounded-2xl px-5 py-4 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -120,10 +122,10 @@ export function CreateTokenForm() {
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
-            <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">Símbolo</label>
+            <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">{t.symbolLabel}</label>
             <input
               type="text"
-              placeholder="MOON"
+              placeholder={t.symbolPlaceholder}
               className="w-full bg-black/5 dark:bg-white/5 border-none rounded-2xl px-5 py-4 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
               value={symbol}
               onChange={(e) => setSymbol(e.target.value)}
@@ -131,7 +133,7 @@ export function CreateTokenForm() {
             />
           </div>
           <div className="space-y-1">
-            <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">Suministro Inicial</label>
+            <label className="text-[10px] font-bold uppercase tracking-widest text-gray-400 ml-1">{t.supplyLabel}</label>
             <input
               type="number"
               className="w-full bg-black/5 dark:bg-white/5 border-none rounded-2xl px-5 py-4 text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
@@ -149,12 +151,12 @@ export function CreateTokenForm() {
           className="btn-primary w-full"
         >
           {!isConnected 
-            ? 'Conectar Wallet para continuar' 
+            ? t.btnConnect
             : isPending 
-              ? 'Confirmando en Wallet...' 
+              ? t.btnPending 
               : isConfirming 
-                ? 'Minando transacción...' 
-                : `Crear ${isMemecoin ? 'Memecoin' : 'Token'} (${flatFeeData ? formatEther(flatFeeData as bigint) : '0.01'} ETH)`}
+                ? t.btnConfirming 
+                : `${t.btnCreate} ${isMemecoin ? 'Memecoin' : 'Token'} (${flatFeeData ? formatEther(flatFeeData as bigint) : '0.01'} ETH)`}
         </button>
       </form>
 
@@ -165,14 +167,14 @@ export function CreateTokenForm() {
               ✓
             </div>
             <div>
-              <h3 className="font-bold text-emerald-900 dark:text-emerald-400 text-base">¡Token Desplegado!</h3>
-              <p className="text-emerald-700/70 dark:text-emerald-400/60 text-xs">Tu contrato está vivo en la red local.</p>
+              <h3 className="font-bold text-emerald-900 dark:text-emerald-400 text-base">{t.successTitle}</h3>
+              <p className="text-emerald-700/70 dark:text-emerald-400/60 text-xs">{t.successDesc}</p>
             </div>
           </div>
 
           <div className="space-y-3">
             <div className="group relative">
-              <label className="block text-[10px] font-bold uppercase tracking-widest text-emerald-600/50 dark:text-emerald-400/40 mb-1 ml-1">Dirección del Contrato</label>
+              <label className="block text-[10px] font-bold uppercase tracking-widest text-emerald-600/50 dark:text-emerald-400/40 mb-1 ml-1">{t.contractAddr}</label>
               <div className="flex items-center gap-2 p-3 bg-white dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 rounded-xl transition-all hover:border-emerald-500/50">
                 <code className="flex-1 font-mono text-[11px] text-emerald-800 dark:text-emerald-300 truncate">
                   {tokenAddress}
@@ -180,7 +182,7 @@ export function CreateTokenForm() {
                 <button 
                   onClick={() => navigator.clipboard.writeText(tokenAddress)}
                   className="p-1.5 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 rounded-md transition-colors text-emerald-600"
-                  title="Copiar dirección"
+                  title={t.copyTitle}
                 >
                   📋
                 </button>
@@ -188,7 +190,7 @@ export function CreateTokenForm() {
             </div>
 
             <div className="pt-2 border-t border-emerald-100 dark:border-emerald-500/10 flex justify-between items-center text-[10px]">
-              <span className="text-emerald-600/60 dark:text-emerald-400/40 font-medium">Hash de Transacción</span>
+              <span className="text-emerald-600/60 dark:text-emerald-400/40 font-medium">{t.txHash}</span>
               <a 
                 href={`#`} 
                 className="font-mono text-emerald-700 dark:text-emerald-400/80 hover:underline truncate max-w-[120px]"
@@ -199,17 +201,17 @@ export function CreateTokenForm() {
           </div>
           
           <p className="mt-4 text-[9px] text-center text-emerald-600/40 dark:text-emerald-400/30 italic">
-            * Importa esta dirección en MetaMask para interactuar con tu token.
+            {t.importNotice}
           </p>
         </div>
       )}
 
       {error && (
         <div className="mt-6 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-600 dark:text-red-400 text-sm">
-          <span className="font-bold">Error: </span>
+          <span className="font-bold">{t.errorTitle}: </span>
           {error.message.includes('User rejected') 
-            ? 'Transacción cancelada por el usuario.' 
-            : 'Fondos insuficientes o error de red.'}
+            ? t.errorRejected 
+            : t.errorFunds}
         </div>
       )}
     </div>
