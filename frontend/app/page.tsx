@@ -263,13 +263,13 @@ export default function Home() {
                           <tr>
                             <td className="py-8 px-10 text-[10px] font-black uppercase tracking-widest text-zinc-500">Factory Address</td>
                             <td className="py-8 px-10 font-mono text-[11px] text-zinc-400 break-all leading-relaxed">
-                              {process.env.NEXT_PUBLIC_FACTORY_ADDRESS || '0x610178dA211FEF7D417bC0e6FeD39F05609AD788'}
+                              {process.env.NEXT_PUBLIC_FACTORY_ADDRESS || '0x513bE1590769cd7e2596825AeAcf5D6a6Fb4E57d'}
                             </td>
                           </tr>
                           <tr>
                            <td className="py-8 px-10 text-[10px] font-black uppercase tracking-widest text-zinc-500">Locker Address</td>
                             <td className="py-8 px-10 font-mono text-[11px] text-zinc-400 break-all leading-relaxed">
-                              {process.env.NEXT_PUBLIC_LOCKER_ADDRESS || '0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e'}
+                              {process.env.NEXT_PUBLIC_LOCKER_ADDRESS || '0x851584f94cbAA49B3f934B4eE8fc198ADb3c0BBf'}
                             </td>
                           </tr>
                           <tr>
