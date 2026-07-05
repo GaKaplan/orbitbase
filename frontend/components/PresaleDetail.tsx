@@ -58,13 +58,37 @@ export function PresaleDetail({ poolAddress, isETH, metadata, onBack, lang }: Pr
   const [cancelConfirmText, setCancelConfirmText] = useState('');
   const { address } = useAccount();
 
+  const { data: poolOwner } = useReadContract({ address: poolAddress as `0x${string}`, abi: POOL_ABI, functionName: 'owner' });
+
+  const [creatorRating, setCreatorRating] = useState<{ averageStars: number; totalReviews: number; ratings: any[] } | null>(null);
+
+  const fetchCreatorRating = async () => {
+    if (!poolOwner) return;
+    try {
+      const res = await fetch(`/api/ratings?targetAddress=${String(poolOwner)}`);
+      const data = await res.json();
+      if (data.success) {
+        setCreatorRating({
+          averageStars: data.averageStars,
+          totalReviews: data.totalReviews,
+          ratings: data.ratings
+        });
+      }
+    } catch (err) {
+      console.error("Error fetching creator rating:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchCreatorRating();
+  }, [poolOwner]);
+
   const { data: payTokenAddr } = useReadContract({ address: poolAddress as `0x${string}`, abi: POOL_ABI, functionName: 'paymentToken' });
   const { data: raised, refetch: refetchRaised } = useReadContract({ address: poolAddress as `0x${string}`, abi: POOL_ABI, functionName: 'totalRaised' });
   const { data: isFin, refetch: refetchIsFin } = useReadContract({ address: poolAddress as `0x${string}`, abi: POOL_ABI, functionName: 'finalized' });
   const { data: isForcedFailed, refetch: refetchIsForced } = useReadContract({ address: poolAddress as `0x${string}`, abi: POOL_ABI, functionName: 'forcedFailed' });
   const { data: sCap } = useReadContract({ address: poolAddress as `0x${string}`, abi: POOL_ABI, functionName: 'softCap' });
   const { data: hCap } = useReadContract({ address: poolAddress as `0x${string}`, abi: POOL_ABI, functionName: 'hardCap' });
-  const { data: poolOwner } = useReadContract({ address: poolAddress as `0x${string}`, abi: POOL_ABI, functionName: 'owner' });
   const { data: endTime } = useReadContract({ address: poolAddress as `0x${string}`, abi: POOL_ABI, functionName: 'endTime' });
   const { data: userContribution } = useReadContract({ 
     address: poolAddress as `0x${string}`, 
@@ -310,7 +334,13 @@ export function PresaleDetail({ poolAddress, isETH, metadata, onBack, lang }: Pr
             </div>
 
             <div className="flex flex-wrap items-center gap-3 mt-6">
-              <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest px-2 py-0.5 bg-white/5 rounded border border-white/5">DB ID: {metadata?.id || 'LOCAL'}</span>
+               <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest px-2 py-0.5 bg-white/5 rounded border border-white/5">DB ID: {metadata?.id || 'LOCAL'}</span>
+               
+               {creatorRating && creatorRating.totalReviews > 0 && (
+                 <div className="flex items-center gap-1.5 px-2.5 py-0.5 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-lg text-[9px] font-black uppercase tracking-widest animate-in fade-in duration-300">
+                   ⭐ {creatorRating.averageStars} ({creatorRating.totalReviews} {creatorRating.totalReviews === 1 ? 'evaluación' : 'evaluaciones'})
+                 </div>
+               )}
               
               {tokenLocks.length > 0 && (
                 <div className="flex items-center gap-2 px-3 py-1 bg-blue-500/10 border border-blue-500/30 rounded-lg animate-in zoom-in duration-500">
@@ -399,6 +429,8 @@ export function PresaleDetail({ poolAddress, isETH, metadata, onBack, lang }: Pr
             isOwner={isOwner} 
             poolName={metadata?.description || `Pool ${poolAddress.substring(0, 6)}`} 
             creatorAddress={poolOwner ? String(poolOwner) : ''}
+            creatorRating={creatorRating}
+            refetchCreatorRating={fetchCreatorRating}
           />
         </div>
 
@@ -616,7 +648,7 @@ export function PresaleDetail({ poolAddress, isETH, metadata, onBack, lang }: Pr
 }
 
 // ============================================
-// TRADUCCIONES LOCALES PARA LA COMUNIDAD
+// TRADUCCIONES LOCALES PARA LA COMUNIDAD Y EVALUACIONES
 // ============================================
 const communityTranslations: Record<string, any> = {
   es: {
@@ -624,6 +656,7 @@ const communityTranslations: Record<string, any> = {
     communityDesc: "Envía preguntas públicas al creador o lee los anuncios oficiales.",
     tabQA: "💬 Preguntas y Respuestas (Q&A)",
     tabAnnouncements: "📢 Anuncios del Creador",
+    tabRatings: "⭐ Evaluaciones",
     inputNamePlaceholder: "Tu nombre o alias (opcional)",
     inputMessagePlaceholder: "Escribe tu mensaje público aquí...",
     btnSubmitMessage: "Enviar Mensaje Público",
@@ -655,13 +688,33 @@ const communityTranslations: Record<string, any> = {
     errorFailed: "Error al procesar la solicitud.",
     successPost: "¡Mensaje publicado con éxito!",
     successDelete: "¡Mensaje eliminado con éxito!",
-    successEdit: "¡Mensaje editado con éxito!"
+    successEdit: "¡Mensaje editado con éxito!",
+    
+    // Ratings
+    ratingTitle: "Evaluaciones y Reputación de Contrapartes",
+    ratingDesc: "Califica a la contraparte comercial de 0 a 5 estrellas con una reseña escrita.",
+    rateCreatorTitle: "Calificar al Emprendedor",
+    rateInvestorTitle: "Calificar a los Inversores de esta Preventa",
+    selectStars: "Selecciona la puntuación (estrellas):",
+    writeReviewPlaceholder: "Escribe tu opinión o reseña...",
+    btnSubmitRating: "Enviar Evaluación",
+    averageRatingLabel: "Promedio de reputación",
+    totalReviewsLabel: "Reseñas totales",
+    noRatingsYet: "Aún no hay calificaciones para este usuario.",
+    eligibleNotice: "Nota: Solo puedes calificar a usuarios con los que hayas realizado negocios (inversores del proyecto o el creador del mismo).",
+    investorListLabel: "Inversores que participaron en esta preventa:",
+    rateBtn: "Calificar",
+    updateRateBtn: "Actualizar",
+    loadingRatings: "Cargando calificaciones...",
+    errorStars: "Debes seleccionar una calificación válida.",
+    starsReceived: "estrellas de reputación"
   },
   en: {
     communityTitle: "Project Community",
     communityDesc: "Send public questions to the creator or read official announcements.",
     tabQA: "💬 Questions & Answers (Q&A)",
     tabAnnouncements: "📢 Creator Announcements",
+    tabRatings: "⭐ Reviews",
     inputNamePlaceholder: "Your name or alias (optional)",
     inputMessagePlaceholder: "Write your public message here...",
     btnSubmitMessage: "Send Public Message",
@@ -693,13 +746,33 @@ const communityTranslations: Record<string, any> = {
     errorFailed: "Error processing request.",
     successPost: "Message published successfully!",
     successDelete: "Message deleted successfully!",
-    successEdit: "Message edited successfully!"
+    successEdit: "Message edited successfully!",
+
+    // Ratings
+    ratingTitle: "Counterparty Reviews & Reputation",
+    ratingDesc: "Rate the business counterparty from 0 to 5 stars with a written review.",
+    rateCreatorTitle: "Rate the Entrepreneur",
+    rateInvestorTitle: "Rate Project Investors",
+    selectStars: "Select your rating (stars):",
+    writeReviewPlaceholder: "Write your opinion or review...",
+    btnSubmitRating: "Submit Review",
+    averageRatingLabel: "Reputation average",
+    totalReviewsLabel: "Total reviews",
+    noRatingsYet: "No reviews for this user yet.",
+    eligibleNotice: "Note: You can only review users you have done business with (project investors or the project creator).",
+    investorListLabel: "Investors in this presale:",
+    rateBtn: "Rate",
+    updateRateBtn: "Update",
+    loadingRatings: "Loading reviews...",
+    errorStars: "You must select a valid star count.",
+    starsReceived: "reputation stars"
   },
   pt: {
     communityTitle: "Comunidade do Projeto",
     communityDesc: "Envie perguntas públicas ao criador ou leia os anúncios oficiais.",
     tabQA: "💬 Perguntas e Respostas (Q&A)",
     tabAnnouncements: "📢 Anúncios do Criador",
+    tabRatings: "⭐ Avaliações",
     inputNamePlaceholder: "Seu nome ou alias (opcional)",
     inputMessagePlaceholder: "Escreva sua mensagem pública aqui...",
     btnSubmitMessage: "Enviar Mensagem Pública",
@@ -731,13 +804,33 @@ const communityTranslations: Record<string, any> = {
     errorFailed: "Erro ao processar a solicitação.",
     successPost: "Mensagem publicada com sucesso!",
     successDelete: "Mensagem excluída com sucesso!",
-    successEdit: "Mensagem editada com sucesso!"
+    successEdit: "Mensagem editada com sucesso!",
+
+    // Ratings
+    ratingTitle: "Avaliações e Reputação de Contrapartes",
+    ratingDesc: "Avalie a contraparte comercial de 0 a 5 estrelas com um comentário por escrito.",
+    rateCreatorTitle: "Avaliar o Empreendedor",
+    rateInvestorTitle: "Avaliar Investidores da Pré-venda",
+    selectStars: "Selecione a classificação (estrelas):",
+    writeReviewPlaceholder: "Escreva sua opinião ou avaliação...",
+    btnSubmitRating: "Enviar Avaliação",
+    averageRatingLabel: "Média de reputação",
+    totalReviewsLabel: "Total de avaliações",
+    noRatingsYet: "Ainda não há avaliações para este usuário.",
+    eligibleNotice: "Nota: Você só pode avaliar usuários com os quais fez negócios (investidores do projeto ou criador do projeto).",
+    investorListLabel: "Investidores desta pré-venda:",
+    rateBtn: "Avaliar",
+    updateRateBtn: "Atualizar",
+    loadingRatings: "Carregando avaliações...",
+    errorStars: "Você deve selecionar uma quantidade válida de estrelas.",
+    starsReceived: "estrelas de reputação"
   },
   fr: {
     communityTitle: "Communauté du Projet",
     communityDesc: "Envoyez des questions publiques au créateur ou lisez les annonces officielles.",
     tabQA: "💬 Questions et Réponses (Q&A)",
     tabAnnouncements: "📢 Annonces du Créateur",
+    tabRatings: "⭐ Évaluations",
     inputNamePlaceholder: "Votre nom ou alias (optionnel)",
     inputMessagePlaceholder: "Écrivez votre message public ici...",
     btnSubmitMessage: "Envoyer un Message Public",
@@ -769,36 +862,59 @@ const communityTranslations: Record<string, any> = {
     errorFailed: "Erreur lors du traitement de la demande.",
     successPost: "Message publié avec succès !",
     successDelete: "Message supprimé avec succès !",
-    successEdit: "Message modifié avec succès !"
+    successEdit: "Message modifié avec succès !",
+
+    // Ratings
+    ratingTitle: "Évaluations et Réputation des Partenaires",
+    ratingDesc: "Évaluez le partenaire commercial de 0 à 5 étoiles avec un commentaire écrit.",
+    rateCreatorTitle: "Évaluer l'Entrepreneur",
+    rateInvestorTitle: "Évaluer les Investisseurs de cette Prévente",
+    selectStars: "Sélectionnez l'évaluation (étoiles) :",
+    writeReviewPlaceholder: "Écrivez votre avis ou évaluation...",
+    btnSubmitRating: "Soumettre l'Évaluation",
+    averageRatingLabel: "Moyenne de réputation",
+    totalReviewsLabel: "Total des évaluations",
+    noRatingsYet: "Aucune évaluation pour cet utilisateur pour le moment.",
+    eligibleNotice: "Note: Vous ne pouvez évaluer que des utilisateurs avec lesquels vous avez fait des affaires (les investisseurs du projet ou le créateur du projet).",
+    investorListLabel: "Investisseurs de cette prévente:",
+    rateBtn: "Évaluer",
+    updateRateBtn: "Mettre à jour",
+    loadingRatings: "Chargement des évaluations...",
+    errorStars: "Veuillez sélectionner un nombre d'étoiles valide.",
+    starsReceived: "étoiles de réputation"
   }
 };
 
 // ============================================
-// COMPONENTE SUB-PANEL DE LA COMUNIDAD
+// COMPONENTE SUB-PANEL DE LA COMUNIDAD Y EVALUACIONES
 // ============================================
 export function CommunityPanel({ 
   poolAddress, 
   lang, 
   isOwner, 
   poolName,
-  creatorAddress
+  creatorAddress,
+  creatorRating,
+  refetchCreatorRating
 }: { 
   poolAddress: string; 
   lang: Language; 
   isOwner: boolean; 
   poolName: string;
   creatorAddress: string;
+  creatorRating: { averageStars: number; totalReviews: number; ratings: any[] } | null;
+  refetchCreatorRating: () => Promise<void>;
 }) {
   const t = communityTranslations[lang] || communityTranslations['es'];
   const { address, isConnected } = useAccount();
   const { signMessageAsync } = useSignMessage();
 
-  const [activeTab, setActiveTab] = useState<'qa' | 'announcements'>('qa');
+  const [activeTab, setActiveTab] = useState<'qa' | 'announcements' | 'ratings'>('qa');
   const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
 
-  // Form states
+  // Q&A Form states
   const [senderName, setSenderName] = useState('');
   const [messageText, setMessageText] = useState('');
   const [targetType, setTargetType] = useState<'public' | 'admin'>('public');
@@ -815,6 +931,19 @@ export function CommunityPanel({
   // Edit states
   const [editText, setEditText] = useState<Record<number, string>>({});
   const [editActive, setEditActive] = useState<Record<number, boolean>>({});
+
+  // Ratings Tab states
+  const [ratingStars, setRatingStars] = useState(5);
+  const [ratingMessage, setRatingMessage] = useState('');
+
+  // Investor Ratings (For Creator use)
+  const [selectedInvestorReviewAddress, setSelectedInvestorReviewAddress] = useState<string | null>(null);
+  const [investorReviewData, setInvestorReviewData] = useState<{ averageStars: number; totalReviews: number; ratings: any[] } | null>(null);
+  const [loadingInvestorReviews, setLoadingInvestorReviews] = useState(false);
+
+  const [investorRatingStars, setInvestorRatingStars] = useState<Record<string, number>>({});
+  const [investorRatingMessage, setInvestorRatingMessage] = useState<Record<string, string>>({});
+  const [investorRatingActive, setInvestorRatingActive] = useState<Record<string, boolean>>({});
 
   const ANVIL_OWNER = '0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266';
   const DEPLOYER_OWNER = '0x37042a9bba97e82811ded1061c28c89488e3234d';
@@ -844,7 +973,6 @@ export function CommunityPanel({
       const res = await fetch('/api/movimientos');
       const data = await res.json();
       if (data.success && data.events) {
-        // Extract unique contributors for this specific pool
         const contribs = data.events
           .filter((ev: any) => ev.type === 'CONTRIBUTED' && ev.address?.toLowerCase() === poolAddress.toLowerCase())
           .map((ev: any) => ev.creator);
@@ -852,6 +980,30 @@ export function CommunityPanel({
       }
     } catch (err) {
       console.error('[CommunityPanel] Error fetching contributors:', err);
+    }
+  };
+
+  const fetchInvestorReviews = async (investorAddress: string) => {
+    if (selectedInvestorReviewAddress === investorAddress) {
+      setSelectedInvestorReviewAddress(null);
+      return;
+    }
+    setLoadingInvestorReviews(true);
+    setSelectedInvestorReviewAddress(investorAddress);
+    try {
+      const res = await fetch(`/api/ratings?targetAddress=${investorAddress.toLowerCase()}`);
+      const data = await res.json();
+      if (data.success) {
+        setInvestorReviewData({
+          averageStars: data.averageStars,
+          totalReviews: data.totalReviews,
+          ratings: data.ratings
+        });
+      }
+    } catch (err) {
+      console.error('[CommunityPanel] Error fetching investor reviews:', err);
+    } finally {
+      setLoadingInvestorReviews(false);
     }
   };
 
@@ -899,7 +1051,7 @@ export function CommunityPanel({
       }
     } catch (err: any) {
       console.error('[CommunityPanel] Post error:', err);
-      if (err.code !== 4001) alert(t.errorFailed); // Ignore user signature rejection
+      if (err.code !== 4001) alert(t.errorFailed);
     } finally {
       setActionLoading(false);
     }
@@ -1064,6 +1216,88 @@ export function CommunityPanel({
     }
   };
 
+  // Submit Entrepreneur evaluation (from investor/visitor)
+  const handleSubmitRating = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!address) return alert('Por favor conecta tu billetera');
+    
+    setActionLoading(true);
+    try {
+      const signatureMessage = `OrbitBase: Calificar a ${creatorAddress} con ${ratingStars} estrellas - ${Date.now()}`;
+      const signature = await signMessageAsync({ message: signatureMessage });
+
+      const res = await fetch('/api/ratings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reviewerAddress: address,
+          targetAddress: creatorAddress,
+          stars: ratingStars,
+          message: ratingMessage.trim() || null,
+          signature,
+          signatureMessage
+        })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setRatingMessage('');
+        alert('Calificación guardada y publicada con éxito.');
+        await refetchCreatorRating();
+      } else {
+        alert(`${t.errorFailed}: ${data.error}`);
+      }
+    } catch (err: any) {
+      console.error('[CommunityPanel] Rating error:', err);
+      if (err.code !== 4001) alert(t.errorFailed);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Submit Investor evaluation (from creator)
+  const handleSubmitInvestorRating = async (investorAddress: string) => {
+    if (!address) return alert('Conecta tu billetera');
+    const stars = investorRatingStars[investorAddress] || 5;
+    const msg = investorRatingMessage[investorAddress] || '';
+
+    setActionLoading(true);
+    try {
+      const signatureMessage = `OrbitBase: Calificar a ${investorAddress} con ${stars} estrellas - ${Date.now()}`;
+      const signature = await signMessageAsync({ message: signatureMessage });
+
+      const res = await fetch('/api/ratings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reviewerAddress: address,
+          targetAddress: investorAddress,
+          stars,
+          message: msg.trim() || null,
+          signature,
+          signatureMessage
+        })
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setInvestorRatingMessage(prev => ({ ...prev, [investorAddress]: '' }));
+        setInvestorRatingActive(prev => ({ ...prev, [investorAddress]: false }));
+        alert('El inversor ha sido calificado correctamente.');
+        // If reviewing investor, clear cache to let user refresh if viewed
+        if (selectedInvestorReviewAddress === investorAddress) {
+          setSelectedInvestorReviewAddress(null);
+        }
+      } else {
+        alert(`${t.errorFailed}: ${data.error}`);
+      }
+    } catch (err: any) {
+      console.error('[CommunityPanel] Investor rating error:', err);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   // Helper to abbreviate address
   const abbr = (addr: string) => `${addr.slice(0, 6)}...${addr.slice(-4)}`;
 
@@ -1125,13 +1359,13 @@ export function CommunityPanel({
                     setEditActive(prev => ({ ...prev, [msg.id]: !prev[msg.id] }));
                     setEditText(prev => ({ ...prev, [msg.id]: msg.message }));
                   }}
-                  className="text-[10px] text-blue-400 hover:text-blue-300 font-black uppercase tracking-widest"
+                  className="text-[10px] text-blue-400 hover:text-blue-300 font-black uppercase tracking-widest bg-transparent border-none cursor-pointer"
                 >
                   ✏️
                 </button>
                 <button 
                   onClick={() => handleDeleteMessage(msg.id)}
-                  className="text-[10px] text-red-400 hover:text-red-300 font-black uppercase tracking-widest"
+                  className="text-[10px] text-red-400 hover:text-red-300 font-black uppercase tracking-widest bg-transparent border-none cursor-pointer"
                 >
                   ❌
                 </button>
@@ -1171,7 +1405,7 @@ export function CommunityPanel({
         {!isReply && isOwner && !replyActive[msg.id] && msg.target_type !== 'admin' && (
           <button 
             onClick={() => setReplyActive(prev => ({ ...prev, [msg.id]: true }))}
-            className="text-[10px] text-amber-500 hover:text-amber-400 font-black uppercase tracking-widest block pt-1"
+            className="text-[10px] text-amber-500 hover:text-amber-400 font-black uppercase tracking-widest block pt-1 bg-transparent border-none cursor-pointer"
           >
             ↩️ {t.btnReply}
           </button>
@@ -1241,10 +1475,16 @@ export function CommunityPanel({
           >
             Anuncios
           </button>
+          <button 
+            onClick={() => setActiveTab('ratings')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${activeTab === 'ratings' ? 'bg-blue-600 text-white shadow-md' : 'text-zinc-500 hover:text-white'}`}
+          >
+            {t.tabRatings}
+          </button>
         </div>
       </div>
 
-      {activeTab === 'qa' ? (
+      {activeTab === 'qa' && (
         <div className="space-y-6">
           {/* Post Message Form */}
           <form onSubmit={handleSubmitMessage} className="space-y-4 bg-white/[0.01] border border-white/5 p-6 rounded-2xl">
@@ -1263,7 +1503,7 @@ export function CommunityPanel({
               <div className="flex-1">
                 <label className="block text-[8px] font-black text-zinc-500 uppercase tracking-widest mb-1.5">Destinatario</label>
                 <select
-                  className="w-full bg-zinc-950/50 border border-white/5 focus:border-blue-500/50 rounded-xl px-4 py-3 outline-none text-white text-xs transition-all cursor-pointer"
+                  className="w-full bg-zinc-950/50 border border-white/5 focus:border-blue-500/50 rounded-xl px-4 py-3 outline-none text-white text-xs transition-all cursor-pointer font-bold"
                   value={targetType}
                   onChange={(e) => setTargetType(e.target.value as any)}
                 >
@@ -1311,7 +1551,9 @@ export function CommunityPanel({
             </div>
           )}
         </div>
-      ) : (
+      )}
+
+      {activeTab === 'announcements' && (
         <div className="space-y-6">
           {/* Creator Announcement Form */}
           {isOwner && (
@@ -1420,7 +1662,7 @@ export function CommunityPanel({
                       {isSystemAdmin && (
                         <button 
                           onClick={() => handleDeleteMessage(ann.id)}
-                          className="text-[10px] text-red-400 hover:text-red-300 font-black uppercase tracking-widest"
+                          className="text-[10px] text-red-400 hover:text-red-300 font-black uppercase tracking-widest bg-transparent border-none cursor-pointer"
                         >
                           ❌
                         </button>
@@ -1442,6 +1684,222 @@ export function CommunityPanel({
                   )}
                 </div>
               ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'ratings' && (
+        <div className="space-y-6">
+          <div className="bg-black/20 border border-white/5 p-6 rounded-2xl space-y-4">
+            <h4 className="text-sm font-black text-white uppercase tracking-wider italic">⭐ {t.ratingTitle}</h4>
+            <p className="text-[10px] text-zinc-500 uppercase tracking-widest leading-relaxed">{t.ratingDesc}</p>
+            <p className="text-[9px] text-zinc-600 font-extrabold uppercase tracking-widest italic">{t.eligibleNotice}</p>
+          </div>
+
+          {/* Rating logic split: Entrepreneur view vs Investor view */}
+          {isOwner ? (
+            // ENTREPRENEUR VIEW: Rate their investors
+            <div className="space-y-6">
+              <div className="bg-amber-500/[0.01] border border-amber-500/10 p-6 rounded-2xl space-y-4">
+                <h4 className="text-xs font-black text-amber-500 uppercase tracking-widest italic">✍️ {t.rateInvestorTitle}</h4>
+                <p className="text-[10px] text-zinc-500 uppercase tracking-widest">{t.investorListLabel}</p>
+                
+                {investors.length === 0 ? (
+                  <p className="text-xs text-zinc-600 italic">No hay inversores en este proyecto aún.</p>
+                ) : (
+                  <div className="space-y-4">
+                    {investors.map((inv) => {
+                      const isRatingActive = !!investorRatingActive[inv];
+                      const currentStars = investorRatingStars[inv] || 5;
+                      const currentMsg = investorRatingMessage[inv] || '';
+
+                      return (
+                        <div key={inv} className="bg-zinc-950/40 border border-white/5 p-4 rounded-xl flex flex-col space-y-3">
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <span className="text-xs font-bold text-white font-mono">{abbr(inv)}</span>
+                            <div className="flex gap-2">
+                              <button 
+                                onClick={() => fetchInvestorReviews(inv)}
+                                className="px-3 py-1 bg-white/5 hover:bg-white/10 text-zinc-400 hover:text-white rounded text-[10px] font-black uppercase tracking-wider transition-all"
+                              >
+                                {selectedInvestorReviewAddress === inv ? 'Ocultar reputación 🔍' : 'Ver reputación 🔍'}
+                              </button>
+                              <button 
+                                onClick={() => setInvestorRatingActive(prev => ({ ...prev, [inv]: !isRatingActive }))}
+                                className="px-3 py-1 bg-amber-500 text-black hover:bg-amber-400 rounded text-[10px] font-black uppercase tracking-wider transition-all"
+                              >
+                                {isRatingActive ? 'Cancelar' : t.rateBtn}
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Inline Reputation Expandable block for Investor */}
+                          {selectedInvestorReviewAddress === inv && (
+                            <div className="bg-zinc-950 border border-white/5 p-4 rounded-lg space-y-3">
+                              {loadingInvestorReviews ? (
+                                <p className="text-[10px] text-zinc-500 uppercase tracking-widest animate-pulse">Cargando calificaciones...</p>
+                              ) : !investorReviewData || investorReviewData.ratings.length === 0 ? (
+                                <p className="text-[10px] text-zinc-600 italic uppercase tracking-wider">{t.noRatingsYet}</p>
+                              ) : (
+                                <div className="space-y-3">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs font-black text-amber-500">⭐ {investorReviewData.averageStars}</span>
+                                    <span className="text-[9px] text-zinc-500 uppercase font-bold">({investorReviewData.totalReviews} {t.starsReceived})</span>
+                                  </div>
+                                  <div className="space-y-2 max-h-[150px] overflow-y-auto pr-1">
+                                    {investorReviewData.ratings.map((r: any) => (
+                                      <div key={r.id} className="text-xs bg-white/[0.01] p-3 rounded border border-white/5 space-y-1">
+                                        <div className="flex justify-between text-[9px] text-zinc-600 font-bold uppercase">
+                                          <span>De: {abbr(r.reviewer_address)}</span>
+                                          <span>{new Date(r.created_at).toLocaleDateString()}</span>
+                                        </div>
+                                        <p className="text-zinc-300"><span className="text-amber-500 font-bold">⭐ {r.stars}</span> — {r.message || 'Sin comentario'}</p>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* Rate Investor Form */}
+                          {isRatingActive && (
+                            <div className="pt-2 border-t border-white/5 space-y-3 animate-in slide-in-from-top duration-200">
+                              <div className="flex items-center gap-3">
+                                <span className="text-[10px] text-zinc-500 uppercase font-black">{t.selectStars}</span>
+                                <div className="flex gap-1">
+                                  {[1, 2, 3, 4, 5].map((s) => (
+                                    <button
+                                      key={s}
+                                      type="button"
+                                      onClick={() => setInvestorRatingStars(prev => ({ ...prev, [inv]: s }))}
+                                      className={`text-xl transition-all ${s <= currentStars ? 'text-amber-400 scale-110' : 'text-zinc-700 hover:text-zinc-600'}`}
+                                    >
+                                      ★
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                              <textarea
+                                placeholder={t.writeReviewPlaceholder}
+                                className="w-full bg-zinc-950/50 border border-white/5 focus:border-amber-500/50 rounded-xl p-3 outline-none text-white text-xs transition-all placeholder:text-zinc-700"
+                                value={currentMsg}
+                                onChange={(e) => setInvestorRatingMessage(prev => ({ ...prev, [inv]: e.target.value }))}
+                              />
+                              <div className="flex justify-end">
+                                <button 
+                                  onClick={() => handleSubmitInvestorRating(inv)}
+                                  disabled={actionLoading}
+                                  className="px-4 py-2 bg-amber-500 text-black hover:bg-amber-400 font-black uppercase text-[9px] tracking-wider rounded-lg shadow-md"
+                                >
+                                  {actionLoading ? 'Guardando...' : t.btnSubmitRating}
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Creator ratings received block */}
+              <div className="glass-card p-6 border-white/5 space-y-4">
+                <h4 className="text-xs font-black text-white uppercase tracking-widest italic">⭐ Evaluaciones Recibidas ({creatorRating?.totalReviews || 0})</h4>
+                {creatorRating && creatorRating.totalReviews > 0 && (
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-2xl font-black text-amber-500">⭐ {creatorRating.averageStars}</span>
+                    <span className="text-[10px] text-zinc-500 uppercase font-bold">({t.totalReviewsLabel}: {creatorRating.totalReviews})</span>
+                  </div>
+                )}
+                {!creatorRating || creatorRating.ratings.length === 0 ? (
+                  <p className="text-xs text-zinc-600 italic">{t.noRatingsYet}</p>
+                ) : (
+                  <div className="space-y-3">
+                    {creatorRating.ratings.map((r: any) => (
+                      <div key={r.id} className="bg-zinc-950/40 border border-white/5 p-4 rounded-xl space-y-1.5">
+                        <div className="flex justify-between items-center text-[9px] text-zinc-500 font-bold uppercase">
+                          <span>De: {abbr(r.reviewer_address)}</span>
+                          <span>{new Date(r.created_at).toLocaleDateString()}</span>
+                        </div>
+                        <p className="text-zinc-200 leading-relaxed text-xs"><span className="text-amber-500 font-black">⭐ {r.stars}</span> — {r.message || 'Sin comentario'}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            // INVESTOR/VISITOR VIEW: Rate the creator and see their reviews
+            <div className="space-y-6">
+              {isConnected && (
+                <form onSubmit={handleSubmitRating} className="bg-amber-500/[0.01] border border-amber-500/10 p-6 rounded-2xl space-y-4">
+                  <h4 className="text-xs font-black text-amber-500 uppercase tracking-widest italic">✍️ {t.rateCreatorTitle}</h4>
+                  
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] text-zinc-500 uppercase font-black">{t.selectStars}</span>
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <button
+                          key={s}
+                          type="button"
+                          onClick={() => setRatingStars(s)}
+                          className={`text-2xl transition-all ${s <= ratingStars ? 'text-amber-400 scale-110' : 'text-zinc-700 hover:text-zinc-600'}`}
+                        >
+                          ★
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <textarea 
+                      placeholder={t.writeReviewPlaceholder}
+                      className="w-full bg-zinc-950/50 border border-white/5 focus:border-amber-500/50 rounded-2xl p-4 outline-none text-white text-sm transition-all placeholder:text-zinc-700 min-h-[100px]"
+                      value={ratingMessage}
+                      onChange={(e) => setRatingMessage(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="flex justify-end pt-2">
+                    <button 
+                      type="submit" 
+                      disabled={actionLoading}
+                      className="px-6 py-3.5 bg-amber-500 hover:bg-amber-400 text-black rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-lg hover:shadow-amber-500/20 disabled:opacity-50"
+                    >
+                      {actionLoading ? 'Enviando...' : t.btnSubmitRating}
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* Creator ratings received block */}
+              <div className="glass-card p-6 border-white/5 space-y-4">
+                <h4 className="text-xs font-black text-white uppercase tracking-widest italic">⭐ Evaluaciones del Emprendedor ({creatorRating?.totalReviews || 0})</h4>
+                {creatorRating && creatorRating.totalReviews > 0 && (
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-2xl font-black text-amber-500">⭐ {creatorRating.averageStars}</span>
+                    <span className="text-[10px] text-zinc-500 uppercase font-bold">({t.totalReviewsLabel}: {creatorRating.totalReviews})</span>
+                  </div>
+                )}
+                {!creatorRating || creatorRating.ratings.length === 0 ? (
+                  <p className="text-xs text-zinc-600 italic">{t.noRatingsYet}</p>
+                ) : (
+                  <div className="space-y-3">
+                    {creatorRating.ratings.map((r: any) => (
+                      <div key={r.id} className="bg-zinc-950/40 border border-white/5 p-4 rounded-xl space-y-1.5">
+                        <div className="flex justify-between items-center text-[9px] text-zinc-500 font-bold uppercase">
+                          <span>De: {abbr(r.reviewer_address)}</span>
+                          <span>{new Date(r.created_at).toLocaleDateString()}</span>
+                        </div>
+                        <p className="text-zinc-200 leading-relaxed text-xs"><span className="text-amber-500 font-black">⭐ {r.stars}</span> — {r.message || 'Sin comentario'}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
